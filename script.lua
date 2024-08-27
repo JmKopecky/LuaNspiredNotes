@@ -6,6 +6,9 @@ local screen = platform.window
 local width = screen:width()
 local height = screen:height()
 local textArray = {}
+local isCurrentlyMultipage = false
+local pageRenderIndex = -1
+local pageInfoDisplay = D2Editor.newRichText()
 local displayMode = "empty"
 
 
@@ -32,9 +35,77 @@ function addText(xPos, yPos, width, height, text)
 end
 
 
+function addPage(textList)
+    for i,v in ipairs(textList) do 
+        textPage = D2Editor.newRichText()
+        textPage:move(0, 0)
+        textPage:resize(width, height * 0.88)
+        textPage:setText(v)
+        textPage:setReadOnly(true)
+        textPage:setVisible(false)
+        table.insert(textArray, textPage)
+    end
+    isCurrentlyMultipage = true;
+    pageRenderIndex = 1
+    setPageVisible()
+end
+
+
+function setPageVisible()
+    for i,v in ipairs(textArray) do
+        if i == pageRenderIndex then
+            v:setVisible(true)
+        else 
+            v:setVisible(false)
+        end
+    end
+    pageInfoDisplay:move(0, height * 0.88)
+    pageInfoDisplay:resize(width, height * 0.12)
+    pageInfoDisplay:setText("Page #".. pageRenderIndex .."/".. #textArray)
+    pageInfoDisplay:setReadOnly(true)
+    pageInfoDisplay:setVisible(true)
+end
+
+
+function trySetPageIndex(index) 
+    if index > 0 and index <= #textArray then
+        pageRenderIndex = index
+        setPageVisible()
+    end
+end
+
+
+function on.charIn(char) -- page swap handling
+    if isCurrentlyMultipage then
+        if char == "3" then -- go to next page
+            trySetPageIndex(pageRenderIndex + 1)
+        end
+        if char == "9" then -- go to previous page
+            trySetPageIndex(pageRenderIndex - 1)
+        end
+        if char == "1" then -- go to first page
+            trySetPageIndex(1)
+        end
+        if char == "7" then -- go to last page
+            trySetPageIndex(#textArray)
+        end
+    end
+ end
+ 
+ 
+ function hidePageLabel()
+    pageRenderIndex = 1
+    isCurrentlyMultipage = false
+    pageInfoDisplay:setVisible(false)
+ end
+
+
 function switchDisplayMode(mode)
     displayMode = mode
     clearText()
+    hidePageLabel()
+    
+   
     
     if displayMode == "empty" then
         addText(width*0.01,height*0.01,width*0.98,height*0.3,"Press Menu to view notes")
@@ -68,11 +139,11 @@ function switchDisplayMode(mode)
     end
     
     if displayMode == "notes_circleinscirctri" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.25,"Equilateral:   \\0el {r=((a√(3))/(6))}    \\0el {R=((a√(3))/(3))}    \\0el {r=((R)/(2))}")
-        addText(width*0.01,height*0.23,width*0.98,height*0.25,"Right Tri:   \\0el {r=s-c=((a+b-c)/(2))}    \\0el {R=((c)/(2))}    \\0el {r=R(((a+b-c)/(c)))}")
-        addText(width*0.01,height*0.43,width*0.98,height*0.27,"\\0el {a,b=((2r+c)/(2))±((√(8c^(2)-4(2r+c)^(2)))/(4))}\n\\0el {b=((2r(a-r))/(a-2r))    c=(a-2r)+((2r(a-r))/(a-2r))=a+b-2r}")
-        addText(width*0.01,height*0.66,width*0.98,height*0.28,"Scalene: \\0el {K=√(s(s-a)(s-b)(s-c))}  \\0el {s=((1)/(2))(a+b+c)}")
-        addText(width*0.01,height*0.85,width*0.98,height*0.27,"\\0el {r=(s-c)*tan(((C)/(2)))=(((a+b-c))/(2))*tan(((C)/(2))) R=((abc)/(4K))   r=4R*sin(((A)/(2)))*sin(((B)/(2)))*sin(((C)/(2)))}")
+        conversionList = {};
+        table.insert(conversionList, "Equilateral:   \\0el {r=((a√(3))/(6))}  \n  \\0el {R=((a√(3))/(3))}  \n  \\0el {r=((R)/(2))}")
+        table.insert(conversionList, "Right Tri:   \\0el {r=s-c=((a+b-c)/(2))}    \\0el {R=((c)/(2))}    \\0el {r=R(((a+b-c)/(c)))}    \\0el {a,b=((2r+c)/(2))±((√(8c^(2)-4(2r+c)^(2)))/(4))}\n\\0el {b=((2r(a-r))/(a-2r))}    \\0el {c=(a-2r)+((2r(a-r))/(a-2r))=a+b-2r}")
+        table.insert(conversionList, "Scalene: \\0el {K=√(s(s-a)(s-b)(s-c))}  \\0el {s=((1)/(2))(a+b+c)}    \\0el {r=(s-c)*tan(((C)/(2)))=(((a+b-c))/(2))*tan(((C)/(2)))}  \\0el {R=((abc)/(4K))}   \\0el {r=4R*sin(((A)/(2)))*sin(((B)/(2)))*sin(((C)/(2)))}")
+        addPage(conversionList)
     end
     
     if displayMode == "notes_scalingeq" then
@@ -122,15 +193,17 @@ function switchDisplayMode(mode)
     end
     
     if displayMode == "notes_conespyramids" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.6,"Square-Base Pyramid:\n\\0el {h=((a*tan(α))/(√(2)))  s=((h)/(sin(α)))=((a)/(√(2)*cos(α)))   S=((a^(2))/(cos(α)))*√(1+sin^(2)(α))   T=S+a^(2)   V=((a^(2)h)/(3))")
-        addText(width*0.01,height*0.61,width*0.98,height*0.39,"Right Circular Cone:\n\\0el {s=√(R^(2)+h^(2))=((h)/(cos(θ)))=((R)/(sin(θ)))   S=πRs   T=πR(R+s)   V=((π)/(3))R^(2)h}")
+        conversionList = {};
+        table.insert(conversionList, "Square-Base Pyramid:\n\\0el {h=((a*tan(α))/(√(2)))  s=((h)/(sin(α)))=((a)/(√(2)*cos(α)))   S=((a^(2))/(cos(α)))*√(1+sin^(2)(α))   T=S+a^(2)   V=((a^(2)h)/(3))")
+        table.insert(conversionList, "Right Circular Cone:\n\\0el {s=√(R^(2)+h^(2))=((h)/(cos(θ)))=((R)/(sin(θ)))   S=πRs   T=πR(R+s)   V=((π)/(3))R^(2)h}")
+        addPage(conversionList)
     end
     
     if displayMode == "notes_frustumrightcirccone" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.25,"\\0el {s=√((R₁-R₂)^(2)+h^(2))  =((h)/(cos(θ)))   =((R₁-R₂)/(sin(θ)))}")
-        addText(width*0.01,height*0.25,width*0.98,height*0.25,"\\0el {S=π(R₁+R₂)s  T=π[R₁^(2)+R₂^(2)+(R₁+R₂)s]}")
-        addText(width*0.01,height*0.41,width*0.98,height*0.25,"\\0el {V=((1)/(3))πh(R₁^(2)+R₂^(2)+R₁*R₂)}")
-        addText(width*0.01,height*0.65,width*0.98,height*0.35,"R1 = radius of lower base (bigger radius)\nR2 = radius of upper base (smaller radius)\ns = slant height\nh = altitude / height\nθ = semicone angle (half of angle at the tip)\nS = lateral surface area\nT = total surface area\nV = volume")
+        conversionList = {};
+        table.insert(conversionList, "\\0el {s=√((R₁-R₂)^(2)+h^(2))  =((h)/(cos(θ)))   =((R₁-R₂)/(sin(θ)))}\n\\0el {S=π(R₁+R₂)s  T=π[R₁^(2)+R₂^(2)+(R₁+R₂)s]}\n\\0el {V=((1)/(3))πh(R₁^(2)+R₂^(2)+R₁*R₂)}")
+        table.insert(conversionList, "R1 = radius of lower base (bigger radius)\nR2 = radius of upper base (smaller radius)\ns = slant height    h = altitude / height\nθ = semicone angle (half of angle at the tip)\nS = lateral surface area\nT = total surface area\nV = volume")
+        addPage(conversionList)
     end
     
     if displayMode == "notes_solidsrev" then
@@ -151,9 +224,10 @@ function switchDisplayMode(mode)
     end
 
     if displayMode == "notes_rhombusparallelogram" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.4,"a,b=side dimensions, p=perimeter, c,d=diagonals,h=altitude on side a, K=area, A,B,C,D=interior angles")
-        addText(width*0.01,height*0.4,width*0.98,height*0.3,"Parallelogram: \\0el {A=C, B=D, a≠b    A+B=180°  c=√(a^(2)+b^(2)-2ab*cos(A))=√(a^(2)+b^(2)+2ab*cos(B))  d=√(a^(2)+b^(2)+2ab*cos(A))=√(a^(2)+b^(2)-2ab*cos(B))  p=2(a+b)   h=b*sin(A)=b*sin(B)  K=ah=ab*sin(A)=ab*sin(B)}")
-        addText(width*0.01,height*0.7,width*0.98,height*0.3,"Rhombus: \\0el {A=C, B=D, a=b    A+B=180°  c=a√(2(1-cos(A)))=a√(2(1+cos(B)))  d=a√(2(1+cos(A)))=a√(2(1-cos(B)))  p=4a    h=b*sin(A)=b*sin(B)  K=ah=ab*sin(A)=ab*sin(B)}")
+        conversionList = {};
+        table.insert(conversionList, "a,b=side dimensions, p=perimeter, c,d=diagonals,h=altitude on side a, K=area, A,B,C,D=interior angles\nRhombus: \\0el {A=C, B=D, a=b    A+B=180°  c=a√(2(1-cos(A)))=a√(2(1+cos(B)))  d=a√(2(1+cos(A)))=a√(2(1-cos(B)))  p=4a    h=b*sin(A)=b*sin(B)  K=ah=ab*sin(A)=ab*sin(B)}")
+        table.insert(conversionList, "Parallelogram: \\0el {A=C, B=D, a≠b    A+B=180°  c=√(a^(2)+b^(2)-2ab*cos(A))=√(a^(2)+b^(2)+2ab*cos(B))  d=√(a^(2)+b^(2)+2ab*cos(A))=√(a^(2)+b^(2)-2ab*cos(B))  p=2(a+b)   h=b*sin(A)=b*sin(B)  K=ah=ab*sin(A)=ab*sin(B)}")
+        addPage(conversionList)
     end
     
     if displayMode == "notes_distpointline" then
@@ -182,11 +256,24 @@ function switchDisplayMode(mode)
     end
     
     if displayMode == "notes_physics" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.99,"\\0el {Acceleration Equations  v=v+a(t-t)    d=d+v(t-t)+((1)/(2))a(t-t)^(2)         Trajectory Equations  d=((-v^(2)*sin(2θ))/(g))    d=((-v^(2)*sin^(2)(θ))/(2g))  v=√((((-g)/(8d)))(d^(2)+16d^(2)))  tan θ=((4d)/(d))        t=((-2vsin(θ))/(g))             Unequal Elevations  d=vt*cos(θ)       t=((d)/(v*cos(θ)))  d=d+vt*sin(θ)+((1)/(2))gt^(2)  d=d+d*tan(θ)+((g*d^(2))/(2v^(2)*cos^(2)(θ)))}")
+        conversionList = {}
+        table.insert(conversionList, "Acceleration Equations \n \\0el {v=v+a(t-t)} \n \\0el {d=d+v(t-t)+((1)/(2))a(t-t)^(2)}")
+        table.insert(conversionList, "Trajectory Equations\n \\0el {d=((-v^(2)*sin(2θ))/(g))}     \\0el {d=((-v^(2)*sin^(2)(θ))/(2g))} \n \\0el {v=√((((-g)/(8d)))(d^(2)+16d^(2)))} \n \\0el {tan θ=((4d)/(d))}    \\0el {t=((-2vsin(θ))/(g))}")
+        table.insert(conversionList, "Unequal Elevations\n \\0el {d=vt*cos(θ)} \\0el {t=((d)/(v*cos(θ)))} \\0el {d=d+vt*sin(θ)+((1)/(2))gt^(2)} \\0el {d=d+d*tan(θ)+((g*d^(2))/(2v^(2)*cos^(2)(θ)))}")
+        addPage(conversionList)
     end
     
     if displayMode == "notes_conversions" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.99,"1 year ≈ 365.256 days\n1 inch (in) = 2.54 centimeters (cm)\n1 mile (mi) = 5,280 feet (ft)\n1 square mile (sq.mi., mi^(2)) = 640 acres\n1 teaspoon (tsp) = \\0el {1/6} ounce (liquid,oz)\n1 tablespoon (tbs) = 0.5 ounce (liquid, oz)\n1 cup = 8 ounces (liquid, oz)\n1 pint (pt) = 16 ounces (liquid, oz)\n1 quart (qt) = 32 ounces (liquid, oz)\n1 half gallon = 64 ounces (liquid, oz)\n1 gallon (gal) = 128 ounces (liquid, oz)\n1 cubic foot (ft^(3)) ≈ 7.481 gallons (gal)\n1 liter (l) ≈ 1.0567 quarts (qt)\n1 pound (avdp, lb) = 16 ounces (avdp, oz)\n1 pound (lb) ≈ 453.592 grams (g)\n1 ton = 2000 pounds (lb)\n1 revolution (rev) = 360 degrees (deg, °)\nπ radians (rad) = 180 degrees (deg, °)\n1 degree (deg, °) = 60 minutes (') [angle]\n1 minute (') = 60 seconds ('') [angle]\n°C=5(°F-32)/9 ≈ K - 273.15, where °C = Degrees Centigrade/Celsius, °F = Degrees Fahrenheit, K = Kelvins\nMetric System Prefixes: \nnano (n,10^(-9))\nmicro (μ,10^(-6))\nmilli (m,10^(-3))\ncenti (c,10^(-2))\ndeci (d,10^(-1))\nhecto (h,100)\nkilo (k,10^(3))\nmega (M,10^(6))\nMonths of the Year: \nJanuary (31)\nFebruary (28*)\nMarch (31)\nApril (30)\nMay (31)\nJune (30)\nJuly (31)\nAugust (31)\nSeptember (30)\nOctober (31)\nNovember (30)\nDecember (31)   \n*: February has 29 days on leap years (divisible by 4 and not divisible by 100)    \nFun Facts:    \nLength of football field (without end zones) = 100 yards (yd)    \nA deck of cards has 52 cards, 13 each of spades, hearts, diamonds, and clubs. Sometimes 2 jokers are added.    \nDensity(water) = 1 gram/cubic centimeter (g/cc, g/cm^(3))    \ng = acceleration on earth ≈ -32.174 ft/s^(2)    \nRadius of Earth ≈ 3960 miles    \nMass of Earth ≈ 5.98×10^(24) kg    \n1+x+x^(2)+x^(3)+x^(4)+x^(5)+...=(1-x)^(-1)    \n(x^(2)<1)")
+        conversionList = {}
+        table.insert(conversionList, "1 year ≈ 365.256 days\n1 inch (in) = 2.54 centimeters (cm)\n1 mile (mi) = 5,280 feet (ft)\n1 square mile (sq.mi., mi^(2)) = 640 acres\n1 teaspoon (tsp) = \\0el {1/6} ounce (liquid,oz)\n1 tablespoon (tbs) = 0.5 ounce (liquid, oz)")
+        table.insert(conversionList, "1 cup = 8 ounces (liquid, oz)\n1 pint (pt) = 16 ounces (liquid, oz)\n1 quart (qt) = 32 ounces (liquid, oz)\n1 half gallon = 64 ounces (liquid, oz)\n1 gallon (gal) = 128 ounces (liquid, oz)\n1 cubic foot (ft^(3)) ≈ 7.481 gallons (gal)\n1 liter (l) ≈ 1.0567 quarts (qt)")
+        table.insert(conversionList, "1 pound (avdp, lb) = 16 ounces (avdp, oz)\n1 pound (lb) ≈ 453.592 grams (g)\n1 ton = 2000 pounds (lb)\n1 revolution (rev) = 360 degrees (deg, °)\nπ radians (rad) = 180 degrees (deg, °)\n1 degree (deg, °) = 60 minutes (') [angle]\n1 minute (') = 60 seconds ('') [angle]")
+        table.insert(conversionList, "Temperature: \n°C=5(°F-32)/9\n ≈ K - 273.15, \nwhere °C = Degrees Centigrade/Celsius, \n°F = Degrees Fahrenheit, \nK = Kelvins")
+        table.insert(conversionList, "Metric System Prefixes: \nnano (n,10^(-9)),    micro (μ,10^(-6))\nmilli (m,10^(-3)),    centi (c,10^(-2))\ndeci (d,10^(-1)),    hecto (h,100)\nkilo (k,10^(3)),    mega (M,10^(6)")
+        table.insert(conversionList, "Months of the Year: \nJanuary (31),    February (28*)    March (31)\nApril (30)    May (31)    June (30)\nJuly (31)    August (31)    September (30)\nOctober (31)    November (30)    December (31)\n*: February has 29 days on leap years (divisible by 4 and not divisible by 100)")
+        table.insert(conversionList, "Fun Facts:    \nLength of football field (without end zones) = 100 yards (yd)    \nA deck of cards has 52 cards, 13 each of spades, hearts, diamonds, and clubs. Sometimes 2 jokers are added.\nDensity(water) = 1 gram/cubic centimeter (g/cc, g/cm^(3))")
+        table.insert(conversionList, "g = acceleration on earth ≈ -32.174 ft/s^(2)    \nRadius of Earth ≈ 3960 miles    \nMass of Earth ≈ 5.98×10^(24) kg    \n1+x+x^(2)+x^(3)+x^(4)+x^(5)+...=(1-x)^(-1)    \n(x^(2)<1)")
+        addPage(conversionList)
     end
 end
 

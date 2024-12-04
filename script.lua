@@ -1,5 +1,3 @@
--- Lua code by Joseph Kopecky, math notes by GCM Mu Alpha Theta
-
 platform.apilevel = "2.3"
 
 local screen = platform.window
@@ -114,6 +112,7 @@ function switchDisplayMode(mode)
     displayMode = mode
     clearText()
     hidePageLabel()
+    screen:invalidate()
     
    
     
@@ -169,8 +168,8 @@ function switchDisplayMode(mode)
     
     if displayMode == "notes_powerpoint" then
         addText(width*0.01,height*0.05,width*0.33,height*0.17,"\\0el {AE*CE=BE*DE}")
-        addText(width*0.38,height*0.01,width*0.33,height*0.17,"\\0el {AB^(2)=BC*CD}")
-        addText(width*0.70,height*0.01,width*0.30,height*0.17,"\\0el {AB^(2)=BC*CD}")
+        addText(width*0.37,height*0.01,width*0.33,height*0.17,"\\0el {AB^(2)=BC*CD}")
+        addText(width*0.67,height*0.05,width*0.4,height*0.17,"\\0el {CB*CA=CD*CE}")
     end
     
     if displayMode == "notes_segmentssectors" then
@@ -191,7 +190,7 @@ function switchDisplayMode(mode)
     
     if displayMode == "notes_cylinders" then
         conversionList = {};
-        table.insert(conversionList, "Right Circular Cylinders:\n\\0el {S=2πRh  T=2πR(R+h)  V=πR^(2)}\nSlant/Right Cylinders of Any Shape:\n \\0el {S=sC=((hC)/(sin(θ)))   A=A'*sin(θ)  V=hA'=sA")
+        table.insert(conversionList, "Right Circular Cylinders:\n\\0el {S=2πRh  T=2πR(R+h)  V=πR^(2)*h}\nSlant/Right Cylinders of Any Shape:\n \\0el {S=sC=((hC)/(sin(θ)))   A=A'*sin(θ)  V=hA'=sA")
         table.insert(conversionList, " ")
         addPage(conversionList)
     end
@@ -244,16 +243,16 @@ function switchDisplayMode(mode)
     end
     
     if displayMode == "notes_compoundinterest" then
-        addText(width*0.01,height*0.01,width*0.98,height*0.15,"Simple Interest: \\0el {A=P(1+i)^(n)}")
-        addText(width*0.01,height*0.15,width*0.98,height*0.25,"Compound Interest: \\0el {A=P(1+((i)/(q)))^(nq)}")
-        addText(width*0.01,height*0.4,width*0.98,height*0.4,"Exponential: \\0el {A=P[((Ao)/(Po))]^(t/to)=P^(t/τ)}")
+        addText(width*0.01,height*0,width*0.98,height*0.16,"Simple Interest: \\0el {A=P(1+i)^(n)}")
+        addText(width*0.01,height*0.15,width*0.98,height*0.27,"Compound Interest: \\0el {A=P(1+((i)/(q)))^(nq)}")
+        addText(width*0.01,height*0.42,width*0.98,height*0.4,"Exponential: \\0el {A=P[((Ao)/(Po))]^(t/to)=P^(t/τ)}")
         addText(width*0.65,height*0.65,width*0.98,height*0.4,"where \\0el {τ=((to)/(ln(((Ao)/(Po)))))}")
     end
     
     if displayMode == "notes_rates" then
         addText(width*0.01,height*0.01,width*0.98,height*0.25,"\\0el {d=rt   therefore   r=((d)/(t))}")
         addText(width*0.01,height*0.25,width*0.98,height*0.15,"Avg. rate of each worker is harmonic mean")
-        addText(width*0.01,height*0.4,width*0.98,height*0.4,"\\0el {r=((n)/(((1)/(r₁))+((1)/(r₂))+...+((1)/(r))))     t=((1)/(r)) if dis one task}")
+        addText(width*0.01,height*0.4,width*0.98,height*0.4,"\\0el {r=((n)/(((1)/(r₁))+((1)/(r₂))+...+((1)/(r))))     t=((1)/(r)) if d is one task}")
         addText(width*0.01,height*0.8,width*0.98,height*0.3,"\\0el {((1)/(t₁))+((1)/(t₂))=((1)/(t))}")
     end
     
@@ -309,6 +308,11 @@ circlescalene = image.new(_R.IMG.scalequitri):copy(width * 0.6, height * 0.8)
 
 
 function on.paint(gc)
+    
+    if gc == nil then
+        return
+    end
+
     gc:setColorRGB(0,0,0)
     gc:setPen("thin", "smooth")
     
